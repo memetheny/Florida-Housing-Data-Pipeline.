@@ -20,10 +20,27 @@ def read_source(name, url):
         with urlopen(url, timeout=45) as response:
             return pd.read_csv(response)
     except (URLError, TimeoutError) as error:
-        raise SystemExit(f"Could not download {name}: {error}") from error
+        message = f"Could not download {name}: {error}"
+        if "CERTIFICATE_VERIFY_FAILED" in str(error):
+            message += (
+                "\nPython could not verify the site's SSL certificate. On macOS "
+                "with python.org Python, run the 'Install Certificates.command' "
+                "file in your Python application folder, then try again."
+            )
+        raise SystemExit(message) from error
+    except (pd.errors.ParserError, pd.errors.EmptyDataError) as error:
+        raise SystemExit(f"{name} returned data that is not a valid CSV: {error}") from error
+
+
+def require_columns(name, raw, columns):
+    # Fail with a clear message if a source renames or drops a column.
+    missing = [column for column in columns if column not in raw.columns]
+    if missing:
+        raise SystemExit(f"{name} data is missing expected columns: {', '.join(missing)}")
 
 
 def clean_home_values(raw):
+    require_columns("Zillow", raw, ["RegionID", "RegionName", "RegionType", "StateName"])
     # Zillow puts each month in a separate column.
     month_columns = raw.columns[raw.columns.str.fullmatch(r"\d{4}-\d{2}-\d{2}")]
     florida = raw.loc[raw["StateName"].eq("FL") & raw["RegionType"].eq("msa")]
@@ -43,6 +60,7 @@ def clean_home_values(raw):
 
 
 def clean_mortgage_rates(raw):
+    require_columns("FRED", raw, ["observation_date", "MORTGAGE30US"])
     # Average the available weekly observations within each calendar month.
     raw["month"] = pd.to_datetime(raw["observation_date"]).dt.strftime("%Y-%m")
     raw["mortgage_rate_pct"] = pd.to_numeric(raw["MORTGAGE30US"], errors="coerce")
