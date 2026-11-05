@@ -13,6 +13,8 @@ python pipeline.py
 
 On macOS, use `python3` if that is the command your system recognizes. On Windows, you can use `py` instead.
 
+If the download fails with a certificate error on macOS, open your Python folder in Applications and run `Install Certificates.command`, then try again.
+
 The script prints the results and creates `housing.db` locally. Each run refreshes the two tables. The query compares each metro with the same calendar month a year earlier. Metros missing either home value are excluded. The national mortgage rate provides context and is the same for every metro in the table.
 
 ## Sources
