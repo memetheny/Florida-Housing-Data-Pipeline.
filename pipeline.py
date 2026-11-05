@@ -101,7 +101,7 @@ def main():
         raise SystemExit("No matching records for the latest Zillow month.")
     print(f"Loaded {home_values['metro_id'].nunique()} Florida metros.")
     print(results.to_string(index=False))
-       make_outputs(home_values)
+    make_outputs(home_values)
 
 if __name__ == "__main__":
     main()
