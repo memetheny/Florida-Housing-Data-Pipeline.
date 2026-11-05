@@ -5,9 +5,9 @@ from urllib.error import URLError
 from urllib.request import urlopen
 
 import pandas as pd
-   import matplotlib
-   matplotlib.use("Agg")
-   import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 
 ROOT = Path(__file__).resolve().parent
 ZILLOW_URL = (
