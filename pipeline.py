@@ -69,7 +69,24 @@ def clean_mortgage_rates(raw):
     raw["mortgage_rate_pct"] = pd.to_numeric(raw["MORTGAGE30US"], errors="coerce")
     return raw.groupby("month", as_index=False)["mortgage_rate_pct"].mean().dropna()
 
+def make_outputs(home_values):
+    latest = home_values["month"].max()
+    prior = (pd.Period(latest) - 12).strftime("%Y-%m")
+    now = home_values[home_values["month"] == latest].set_index("metro")["zhvi"]
+    then = home_values[home_values["month"] == prior].set_index("metro")["zhvi"]
+    growth = ((now / then - 1) * 100).dropna().sort_values()
 
+    growth.rename("yoy_growth_pct").round(2).to_csv(ROOT / "florida_growth.csv")
+
+    fig, ax = plt.subplots(figsize=(8, 9))
+    colors = ["#c0392b" if v < 0 else "#2e7d32" for v in growth]
+    ax.barh(growth.index, growth.values, color=colors)
+    ax.axvline(0, color="black", linewidth=0.8)
+    ax.set_xlabel("Year-over-year home value growth (%)")
+    ax.set_title(f"Florida metros: home value growth, {latest} vs {prior}")
+    fig.tight_layout()
+    fig.savefig(ROOT / "florida_growth.png", dpi=200)
+   
 def main():
     home_values = clean_home_values(read_source("Zillow", ZILLOW_URL))
     rates = clean_mortgage_rates(read_source("FRED", FRED_URL))
@@ -84,7 +101,7 @@ def main():
         raise SystemExit("No matching records for the latest Zillow month.")
     print(f"Loaded {home_values['metro_id'].nunique()} Florida metros.")
     print(results.to_string(index=False))
-
+       make_outputs(home_values)
 
 if __name__ == "__main__":
     main()
